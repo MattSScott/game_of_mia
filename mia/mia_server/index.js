@@ -38,5 +38,13 @@ var miaRoomData = [];
 var connectedClients = {};
 
 io.on("connection", (client) => {
-  console.log(`New client: ${client} connected`);
+  console.log(`New client connected`);
+
+  client.on("test", (data) => {
+    console.log(data);
+  });
+
+  client.on("roller", (msg) => {
+    console.log(msg);
+  });
 });
