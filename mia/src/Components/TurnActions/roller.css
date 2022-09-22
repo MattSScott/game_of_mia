@@ -1,0 +1,13 @@
+.main {
+    display: center;
+}
+
+.rollerDiv {
+    justify-content: center;
+    display: flex;
+    font-size: 10px;
+}
+
+.rollerForm {
+    width: 20px;
+}
