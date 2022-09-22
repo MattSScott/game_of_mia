@@ -12,6 +12,8 @@ function App() {
     isShaking: false,
   });
 
+  // constructor = define object above and dynamically make array: [0] player:true [1->n-1] player:false
+
   return (
     <div className="App">
       <header className={state.lastLife ? "App-header-last-life" : "App-header"}>

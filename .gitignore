@@ -1,3 +1,3 @@
-mia/node_modules
+mia/*/node_modules
 *.DS_Store
 .DS_Store

@@ -1,11 +1,10 @@
 import "./roller.css";
 import React, { useState } from "react";
-import { wait } from "@testing-library/user-event/dist/utils";
 
 function Roller({ state, setRoll }) {
   const [validState, setValid] = useState("Lie About Roll");
 
-  async function roll() {
+  function roll() {
     var r1 = Math.floor(Math.random() * 6) + 1;
     var r2 = Math.floor(Math.random() * 6) + 1;
 
@@ -14,17 +13,26 @@ function Roller({ state, setRoll }) {
 
     setRoll({ ...state, isShaking: true });
 
-    await wait(1000);
-
-    setRoll({ ...state, lastRoll: larger * 10 + smaller, isShaking: false });
+    setTimeout(
+      () =>
+        setRoll({
+          ...state,
+          lastRoll: larger * 10 + smaller,
+          isShaking: false,
+        }),
+      1000
+    );
   }
 
   const decLives = () => {
+    if (state.lives === "OUT") return;
     var newLives = state.lives - 1;
-    if (newLives === 0) {
+    if (newLives === 0 && state.lastLife) {
+      setRoll({ ...state, lives: "OUT" });
+    } else if (newLives === 0) {
       setRoll({ ...state, lastLife: true, lives: 6 });
     } else {
-      setRoll({ ...state, lives: state.lives - 1 });
+      setRoll({ ...state, lives: newLives });
     }
   };
 
@@ -45,6 +53,7 @@ function Roller({ state, setRoll }) {
     } else {
       setValid("Valid");
       setRoll({ ...state, lastRoll: entry });
+      setTimeout(() => setValid("Lie About Roll"), 500);
     }
   }
 
