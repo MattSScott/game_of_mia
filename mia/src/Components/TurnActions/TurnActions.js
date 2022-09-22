@@ -2,7 +2,6 @@ import "./roller.css";
 import React, { useState } from "react";
 import { wait } from "@testing-library/user-event/dist/utils";
 
-
 function Roller({ state, setRoll }) {
   const [validState, setValid] = useState("Lie About Roll");
 
@@ -22,7 +21,7 @@ function Roller({ state, setRoll }) {
 
   const decLives = () => {
     var newLives = state.lives - 1;
-    if (newLives == 0) {
+    if (newLives === 0) {
       setRoll({ ...state, lastLife: true, lives: 6 });
     } else {
       setRoll({ ...state, lives: state.lives - 1 });
@@ -45,7 +44,7 @@ function Roller({ state, setRoll }) {
       setValid("Invalid Format");
     } else {
       setValid("Valid");
-      setRoll({...state, lastRoll: entry})
+      setRoll({ ...state, lastRoll: entry });
     }
   }
 
