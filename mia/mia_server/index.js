@@ -9,7 +9,6 @@ const {
   adjectives,
   colors,
   animals,
-  names,
 } = require("unique-names-generator");
 
 // Running our server on port 3080
@@ -40,11 +39,24 @@ var connectedClients = {};
 io.on("connection", (client) => {
   console.log(`New client connected`);
 
-  client.on("test", (data) => {
-    console.log(data);
+  client.on("init", (name) => {
+    if (name) {
+      console.log(`${name} connected`);
+    } else {
+      let userID = uuid();
+      let username = uniqueNamesGenerator({
+        dictionaries: [adjectives, animals],
+      });
+      var userData = { userID: userID, username: username };
+      miaRoomData.push(userData);
+      console.log(`${username} connected`);
+
+      client.emit("SetUserData", userData);
+    }
   });
 
   client.on("roller", (msg) => {
-    console.log(msg);
+    console.log(`${msg.name} rolled ${msg.score}`);
+    client.emit("endTurn");
   });
 });
