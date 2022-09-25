@@ -16,8 +16,6 @@ function App() {
     let userIDVal = localStorage.getItem("userID");
     let usernameVal = localStorage.getItem("username");
 
-    socket.emit("init", usernameVal);
-
     if (!userIDVal) {
       socket.on("SetUserData", (userData) => {
         //When user creation on server is complete, retrieve and save data to local storage
@@ -25,44 +23,44 @@ function App() {
         localStorage.setItem("username", userData.username);
         console.log(userData);
 
-        setUserState({
-          ...userState,
+        setUserState(u => ({
+          ...u,
           currentUsername: userData.username,
           currentUserID: userData.userID,
-        });
+        }));
 
         //Notify Socket server is not ready to chat
-        // socket.emit("UserEnteredRoom", userData);
+        socket.emit("UserEnteredRoom", userData);
       });
       //Send Socket command to create user info for current user
       // socket.emit("CreateUserData");
     } else {
       //If user already has userid and username, notify server to allow them to join chat
-      setUserState({
-        ...userState,
+      setUserState(u => ({
+        ...u,
         currentUsername: usernameVal,
         currentUserID: userIDVal,
-      });
+      }));
       socket.emit("UserEnteredRoom", {
         userID: userIDVal,
         username: usernameVal,
       });
     }
+    socket.emit("init", usernameVal);
   }, []);
 
-  useEffect(() => {
-    if (userState.currentUsername) {
-      console.log(userState);
-      
-    }
-  }, [userState.currentUsername]);
+  // useEffect(() => {
+  //   if (userState.currentUsername) {
+  //     console.log(userState);
+  //   }
+  // }, [userState.currentUsername]);
 
   const [state, setState] = useState({
     lives: 6,
     lastLife: false,
     lastRoll: 0,
     isShaking: false,
-    isPlaying: true,
+    isPlaying: false,
   });
 
   // useEffect(() => {
@@ -73,6 +71,10 @@ function App() {
   // }, [state.lastRoll]);
 
   // constructor = define object above and dynamically make array: [0] player:true [1->n-1] player:false
+
+  socket.on("startTurn", () => {
+    setState({ ...state, isPlaying: true });
+  });
 
   socket.on("endTurn", () => {
     setState({ ...state, isPlaying: false });

@@ -7,7 +7,6 @@ var uuid = require("uuid-random");
 const {
   uniqueNamesGenerator,
   adjectives,
-  colors,
   animals,
 } = require("unique-names-generator");
 
@@ -17,7 +16,7 @@ var PORT = process.env.PORT || 3080;
 var server = app.listen(PORT, function () {
   var host = server.address().address;
   var port = server.address().port;
-  console.log("Listening at http://%s:%s", "localhost:", port);
+  console.log("Listening at http://%s:%s", "localhost", port);
 });
 
 app.use(bodyParser.json());
@@ -33,11 +32,12 @@ app.use(function (req, res, next) {
 
 var io = require("socket.io")(server);
 
-var miaRoomData = [];
-var connectedClients = {};
+var activePlayer = 0;
+var connectedClients = [];
 
 io.on("connection", (client) => {
   console.log(`New client connected`);
+  connectedClients.push(client);
 
   client.on("init", (name) => {
     if (name) {
@@ -48,15 +48,29 @@ io.on("connection", (client) => {
         dictionaries: [adjectives, animals],
       });
       var userData = { userID: userID, username: username };
-      miaRoomData.push(userData);
       console.log(`${username} connected`);
 
       client.emit("SetUserData", userData);
     }
   });
 
-  client.on("roller", (msg) => {
+  //   client.on("UserEnteredRoom", (data) => {
+  //     connectedClients.ap
+  //     // connectedClients[client.id] = data;
+  //     // console.log(connectedClients);
+  //     // console.log(Object.keys(connectedClients));
+  //   });
+
+  /// GAME LOOP
+
+  var currPlayer = connectedClients[activePlayer];
+  currPlayer.emit("startTurn");
+
+  currPlayer.on("roller", (msg) => {
     console.log(`${msg.name} rolled ${msg.score}`);
-    client.emit("endTurn");
+    currPlayer.emit("endTurn");
+    activePlayer = (activePlayer + 1) % connectedClients.length;
+    currPlayer = connectedClients[activePlayer];
+    currPlayer.emit("startTurn");
   });
 });

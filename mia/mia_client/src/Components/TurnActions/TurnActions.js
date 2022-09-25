@@ -13,20 +13,14 @@ function Roller({ state, setRoll, socket, name }) {
 
     setRoll({ ...state, isShaking: true });
 
-    setTimeout(
-      () =>
-        setRoll({
-          ...state,
-          lastRoll: larger * 10 + smaller,
-          isShaking: false,
-        }),
-      1000
-    );
-
-    socket.emit(
-      "roller",
-      {name: name, score: larger*10 + smaller}
-    );
+    setTimeout(() => {
+      setRoll({
+        ...state,
+        lastRoll: larger * 10 + smaller,
+        isShaking: false,
+      });
+      socket.emit("roller", { name: name, score: larger * 10 + smaller });
+    }, 1000);
   }
 
   const decLives = () => {
@@ -65,7 +59,7 @@ function Roller({ state, setRoll, socket, name }) {
   return (
     <div className="main">
       <div className="rollerDiv">
-        <button onClick={() => roll()}>Roll</button>
+        <button onClick={() => state.isPlaying && roll()}>Roll</button>
         <form onSubmit={(event) => validInput(event, setValid)}>
           <input className="rollerForm" type="text" maxLength="2" />
         </form>
