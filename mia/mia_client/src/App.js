@@ -5,6 +5,13 @@ import Roller from "./Components/TurnActions/TurnActions.js";
 import React, { useEffect, useState } from "react";
 import { socket } from "./Services/socket.js";
 
+const loginStates = {
+  LOGIN: "login",
+  WAITING: "waiting",
+  JOINING: "joining",
+  PLAYING: "playing",
+};
+
 function App() {
   const [userState, setUserState] = useState({
     currentUsername: null,
@@ -23,7 +30,7 @@ function App() {
         localStorage.setItem("username", userData.username);
         console.log(userData);
 
-        setUserState(u => ({
+        setUserState((u) => ({
           ...u,
           currentUsername: userData.username,
           currentUserID: userData.userID,
@@ -36,7 +43,7 @@ function App() {
       // socket.emit("CreateUserData");
     } else {
       //If user already has userid and username, notify server to allow them to join chat
-      setUserState(u => ({
+      setUserState((u) => ({
         ...u,
         currentUsername: usernameVal,
         currentUserID: userIDVal,
@@ -63,6 +70,13 @@ function App() {
     isPlaying: false,
   });
 
+  const [login, setLogin] = useState({
+    state: loginStates.LOGIN,
+    loginCode: null,
+    isHost: false,
+    playingWith: [],
+  });
+
   // useEffect(() => {
   //   socket.emit(
   //     "roller",
@@ -79,6 +93,86 @@ function App() {
   socket.on("endTurn", () => {
     setState({ ...state, isPlaying: false });
   });
+
+  socket.on("roomJoined", (msg) => {
+    setLogin({ ...login, state: loginStates.WAITING, isHost: msg.host });
+  });
+
+  socket.on("gameStarted", () => {
+    setLogin({ ...login, state: loginStates.PLAYING });
+  });
+
+  socket.on("updateRoomies", (mates) => {
+    setLogin({ ...login, playingWith: mates });
+  });
+
+  function joinRoom(e) {
+    e.preventDefault();
+    let formData = e.target[0].value;
+    // socket.emit('createRoom', formData)
+    socket.emit("joinRoom", {
+      roomName: formData,
+      userName: userState.currentUsername,
+    });
+    setLogin({ ...login, state: loginStates.JOINING, loginCode: formData });
+    console.log(login);
+  }
+
+  if (login.state === loginStates.LOGIN) {
+    return (
+      <div className="App">
+        <header className="App-header">
+          <h2>Please Join or Create a Room</h2>
+          <form onSubmit={(e) => joinRoom(e)}>
+            <input type="text" />
+            <div>
+              <input type="submit" value="Join Room" />
+            </div>
+          </form>
+          <button>Create Room</button>
+        </header>
+      </div>
+    );
+  }
+
+  if (login.state === loginStates.JOINING) {
+    return (
+      <div className="App">
+        <header className="App-header">
+          <h2>Joining Room...</h2>
+        </header>
+      </div>
+    );
+  }
+
+  if (login.state === loginStates.WAITING) {
+    let button;
+    if (login.isHost) {
+      button = (
+        <button
+          onClick={() => {
+            socket.emit("startGame", login.loginCode);
+          }}
+        >
+          Press to Start
+        </button>
+      );
+    }
+    return (
+      <div className="App">
+        <header className="App-header">
+          <h3>Playing With:</h3>
+          <ul>
+            {login.playingWith.map((name) => (
+              <li key={name}>{name}</li>
+            ))}
+          </ul>
+          <h2>Waiting for Host to Start</h2>
+          {button}
+        </header>
+      </div>
+    );
+  }
 
   return (
     <div className="App">
@@ -100,6 +194,7 @@ function App() {
         />
         <h2>Active: {state.isPlaying ? "Yes" : "No"}</h2>
         <h2>Playing as: {userState.currentUsername}</h2>
+        <h2>In Room: {login.loginCode}</h2>
       </header>
     </div>
   );

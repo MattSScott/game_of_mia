@@ -36,6 +36,7 @@ var activePlayer = 0;
 var connectedClients = [];
 var initialConnect = true;
 var currPlayer;
+var rooms = {};
 
 io.on("connection", (client) => {
   console.log(`New client connected`);
@@ -54,6 +55,33 @@ io.on("connection", (client) => {
 
       client.emit("SetUserData", userData);
     }
+  });
+
+  client.on("joinRoom", (room) => {
+    client.join(room.roomName);
+
+    if (rooms[room.roomName]) {
+      rooms[room.roomName].push({ client: client, name: room.userName });
+    } else {
+      rooms[room.roomName] = [{ client: client, name: room.userName }];
+    }
+
+    if (rooms[room.roomName].length == 1) {
+      client.emit("roomJoined", { host: true });
+    } else {
+      client.emit("roomJoined", { host: false });
+    }
+
+    console.log(rooms[room.roomName]);
+    var roomies = Array.from(rooms[room.roomName], (x) => x.name);
+
+    console.log(roomies);
+
+    io.to(room.roomName).emit("updateRoomies", roomies);
+  });
+
+  client.on("startGame", (room) => {
+    io.to(room).emit("gameStarted");
   });
 
   if (initialConnect) {
