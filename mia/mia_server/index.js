@@ -34,6 +34,8 @@ var io = require("socket.io")(server);
 
 var activePlayer = 0;
 var connectedClients = [];
+var initialConnect = true;
+var currPlayer;
 
 io.on("connection", (client) => {
   console.log(`New client connected`);
@@ -54,23 +56,24 @@ io.on("connection", (client) => {
     }
   });
 
-  //   client.on("UserEnteredRoom", (data) => {
-  //     connectedClients.ap
-  //     // connectedClients[client.id] = data;
-  //     // console.log(connectedClients);
-  //     // console.log(Object.keys(connectedClients));
-  //   });
+  if (initialConnect) {
+    currPlayer = connectedClients[activePlayer];
+    currPlayer.emit("startTurn");
+    initialConnect = false;
+  }
 
-  /// GAME LOOP
-
-  var currPlayer = connectedClients[activePlayer];
-  currPlayer.emit("startTurn");
-
-  currPlayer.on("roller", (msg) => {
+  client.on("roller", (msg) => {
     console.log(`${msg.name} rolled ${msg.score}`);
     currPlayer.emit("endTurn");
     activePlayer = (activePlayer + 1) % connectedClients.length;
     currPlayer = connectedClients[activePlayer];
     currPlayer.emit("startTurn");
   });
+
+  //   client.on("UserEnteredRoom", (data) => {
+  //     connectedClients.ap
+  //     // connectedClients[client.id] = data;
+  //     // console.log(connectedClients);
+  //     // console.log(Object.keys(connectedClients));
+  //   });
 });
