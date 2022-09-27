@@ -146,29 +146,28 @@ function App() {
   }
 
   if (login.state === loginStates.WAITING) {
-    let button;
-    if (login.isHost) {
-      button = (
-        <button
-          onClick={() => {
-            socket.emit("startGame", login.loginCode);
-          }}
-        >
-          Press to Start
-        </button>
-      );
-    }
+    let button = (
+      <button
+        onClick={() => {
+          socket.emit("startGame", login.loginCode);
+        }}
+      >
+        Press to Start
+      </button>
+    );
+
     return (
       <div className="App">
         <header className="App-header">
+          <h2>Room ID: {login.loginCode}</h2>
           <h3>Playing With:</h3>
           <ul>
             {login.playingWith.map((name) => (
               <li key={name}>{name}</li>
             ))}
           </ul>
-          <h2>Waiting for Host to Start</h2>
-          {button}
+          <h2>{login.isHost ? "You are the Host" : "Waiting for Host to Start"}</h2>
+          {login.isHost && button}
         </header>
       </div>
     );
