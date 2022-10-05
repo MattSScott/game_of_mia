@@ -106,16 +106,32 @@ function App() {
     setLogin({ ...login, playingWith: mates });
   });
 
+  socket.on("roomFull", () => {
+    alert("Room is Full!");
+  });
+
   function joinRoom(e) {
     e.preventDefault();
     let formData = e.target[0].value;
     // socket.emit('createRoom', formData)
-    socket.emit("joinRoom", {
-      roomName: formData,
-      userName: userState.currentUsername,
-    });
-    setLogin({ ...login, state: loginStates.JOINING, loginCode: formData });
-    console.log(login);
+    socket.emit(
+      "joinRoom",
+      {
+        roomName: formData,
+        userName: userState.currentUsername,
+      },
+      (resp) => {
+        if (resp) {
+          setLogin({
+            ...login,
+            state: loginStates.JOINING,
+            loginCode: formData,
+          });
+        } else {
+          alert("Room is Full!");
+        }
+      }
+    );
   }
 
   if (login.state === loginStates.LOGIN) {
@@ -166,7 +182,9 @@ function App() {
               <li key={name}>{name}</li>
             ))}
           </ul>
-          <h2>{login.isHost ? "You are the Host" : "Waiting for Host to Start"}</h2>
+          <h2>
+            {login.isHost ? "You are the Host" : "Waiting for Host to Start"}
+          </h2>
           {login.isHost && button}
         </header>
       </div>
@@ -190,6 +208,7 @@ function App() {
           setRoll={setState}
           socket={socket}
           name={userState.currentUsername}
+          room={login.loginCode}
         />
         <h2>Active: {state.isPlaying ? "Yes" : "No"}</h2>
         <h2>Playing as: {userState.currentUsername}</h2>

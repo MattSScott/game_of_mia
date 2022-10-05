@@ -32,11 +32,45 @@ app.use(function (req, res, next) {
 
 var io = require("socket.io")(server);
 
-var activePlayer = 0;
 var connectedClients = [];
-var initialConnect = true;
-var currPlayer;
 var rooms = {};
+var capacity = 4; // hard code for now but maybe change, idk
+
+class roomStruct {
+  constructor() {
+    this.full = false;
+    this.members = [];
+    this.activePlayerIndex = 0;
+  }
+
+  addMember(client) {
+    try {
+      if (this.full) throw "Room is Full";
+      this.members.push(client);
+      if (this.members.length == capacity) {
+        this.full = true;
+      }
+    } catch (err) {
+      console.log(err); // be smarter with this
+    }
+  }
+
+  nextTurn() {
+    this.activePlayerIndex = (this.activePlayerIndex + 1) % this.members.length;
+  }
+
+  get activePlayer() {
+    return this.members[this.activePlayerIndex].client;
+  }
+
+  get numMembers() {
+    return this.members.length;
+  }
+
+  get roomMembers() {
+    return Array.from(this.members, (x) => x.name);
+  }
+}
 
 io.on("connection", (client) => {
   console.log(`New client connected`);
@@ -57,45 +91,57 @@ io.on("connection", (client) => {
     }
   });
 
-  client.on("joinRoom", (room) => {
-    client.join(room.roomName);
+  client.on("joinRoom", (room, didJoin) => {
+    try {
+      // let roomAttempt = rooms[room.roomName];
 
-    if (rooms[room.roomName]) {
-      rooms[room.roomName].push({ client: client, name: room.userName });
-    } else {
-      rooms[room.roomName] = [{ client: client, name: room.userName }];
+      if (rooms[room.roomName] && rooms[room.roomName].numMembers >= capacity) {
+        didJoin(false);
+        throw "Room is Full!";
+      }
+
+      didJoin(true);
+      client.join(room.roomName);
+
+      if (!rooms[room.roomName]) {
+        rooms[room.roomName] = new roomStruct();
+      }
+      rooms[room.roomName].addMember({ client: client, name: room.userName });
+
+      if (rooms[room.roomName].numMembers == 1) {
+        client.emit("roomJoined", { host: true });
+      } else {
+        client.emit("roomJoined", { host: false });
+      }
+
+      console.log(rooms[room.roomName]);
+      var roomies = rooms[room.roomName].roomMembers;
+
+      console.log(roomies);
+
+      io.to(room.roomName).emit("updateRoomies", roomies);
+    } catch (err) {
+      console.log(err);
     }
-
-    if (rooms[room.roomName].length == 1) {
-      client.emit("roomJoined", { host: true });
-    } else {
-      client.emit("roomJoined", { host: false });
-    }
-
-    console.log(rooms[room.roomName]);
-    var roomies = Array.from(rooms[room.roomName], (x) => x.name);
-
-    console.log(roomies);
-
-    io.to(room.roomName).emit("updateRoomies", roomies);
   });
 
   client.on("startGame", (room) => {
+    let curr = rooms[room].activePlayer;
+    curr.emit("startTurn");
     io.to(room).emit("gameStarted");
   });
 
-  if (initialConnect) {
-    currPlayer = connectedClients[activePlayer];
-    currPlayer.emit("startTurn");
-    initialConnect = false;
-  }
-
   client.on("roller", (msg) => {
     console.log(`${msg.name} rolled ${msg.score}`);
+
+    let room = rooms[msg.room];
+
+    let currPlayer = room.activePlayer;
     currPlayer.emit("endTurn");
-    activePlayer = (activePlayer + 1) % connectedClients.length;
-    currPlayer = connectedClients[activePlayer];
-    currPlayer.emit("startTurn");
+    room.nextTurn();
+
+    let nextPlayer = room.activePlayer;
+    nextPlayer.emit("startTurn");
   });
 
   //   client.on("UserEnteredRoom", (data) => {
