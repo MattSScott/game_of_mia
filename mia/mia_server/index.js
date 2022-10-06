@@ -99,16 +99,16 @@ io.on("connection", (client) => {
     console.log(`${name} connected`);
   });
 
-  client.on("joinRoom", (room, didJoin) => {
+  client.on("joinRoom", async (room, didJoin) => {
     try {
       // let roomAttempt = rooms[room.roomName];
 
       if (rooms[room.roomName] && rooms[room.roomName].numMembers >= capacity) {
-        didJoin(false);
+        await didJoin(false);
         throw "Room is Full!";
       }
 
-      didJoin(true);
+      await didJoin(true);
       client.join(room.roomName);
 
       if (!rooms[room.roomName]) {
@@ -117,7 +117,7 @@ io.on("connection", (client) => {
       rooms[room.roomName].addMember({ client: client, name: room.userName });
 
       let isHost = rooms[room.roomName].numMembers == 1;
-      client.emit("roomJoined", { host: isHost, room: room.roomName });
+      client.volatile.emit("roomJoined", { host: isHost, room: room.roomName });
 
       console.log(rooms[room.roomName]);
       var roomies = rooms[room.roomName].roomMembers;

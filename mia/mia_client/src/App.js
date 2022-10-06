@@ -80,7 +80,7 @@ function App() {
     setState({ ...state, isPlaying: false });
   });
 
-  socket.once("roomJoined", (msg) => {
+  socket.on("roomJoined", (msg) => {
     setLogin((l) => ({
       ...l,
       state: loginStates.WAITING,
