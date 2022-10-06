@@ -55,3 +55,9 @@
     transform: rotate(130deg);
   }
 }
+
+.joincreate {
+    justify-content: center;
+    display: flex;
+    font-size: 10px;
+}

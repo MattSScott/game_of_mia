@@ -1,7 +1,7 @@
 import "./roller.css";
 import React, { useState } from "react";
 
-function Roller({ state, setRoll, socket, name }) {
+function Roller({ state, setRoll, socket, name, room }) {
   const [validState, setValid] = useState("Lie About Roll");
 
   function roll() {
@@ -19,7 +19,11 @@ function Roller({ state, setRoll, socket, name }) {
         lastRoll: larger * 10 + smaller,
         isShaking: false,
       });
-      socket.emit("roller", { name: name, score: larger * 10 + smaller });
+      socket.emit("roller", {
+        name: name,
+        score: larger * 10 + smaller,
+        room: room,
+      });
     }, 1000);
   }
 
