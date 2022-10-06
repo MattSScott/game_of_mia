@@ -44,15 +44,17 @@ function App() {
       });
       //Send Socket command to create user info for current user
       // socket.emit("CreateUserData");
+      socket.emit("init");
     } else {
       //If user already has userid and username, notify server to allow them to join chat
+      socket.emit("initExisting", usernameVal);
+
       setUserState((u) => ({
         ...u,
         currentUsername: usernameVal,
         currentUserID: userIDVal,
       }));
     }
-    socket.emit("init", userState.currentUsername);
   }, []);
 
   const [state, setState] = useState({
@@ -78,7 +80,7 @@ function App() {
     setState({ ...state, isPlaying: false });
   });
 
-  socket.on("roomJoined", (msg) => {
+  socket.once("roomJoined", (msg) => {
     setLogin((l) => ({
       ...l,
       state: loginStates.WAITING,

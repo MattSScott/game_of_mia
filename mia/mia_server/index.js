@@ -84,19 +84,19 @@ function checkPlayerState(name) {
 io.on("connection", (client) => {
   console.log(`New client connected`);
 
-  client.on("init", (name) => {
-    if (name) {
-      console.log(`${name} connected`);
-    } else {
-      let userID = uuid();
-      let username = uniqueNamesGenerator({
-        dictionaries: [adjectives, animals],
-      });
-      var userData = { userID: userID, username: username };
-      console.log(`${username} connected`);
+  client.once("init", () => {
+    let userID = uuid();
+    let username = uniqueNamesGenerator({
+      dictionaries: [adjectives, animals],
+    });
+    var userData = { userID: userID, username: username };
+    console.log(`${username} connected`);
 
-      client.emit("SetUserData", userData);
-    }
+    client.emit("SetUserData", userData);
+  });
+
+  client.once("initExisting", (name) => {
+    console.log(`${name} connected`);
   });
 
   client.on("joinRoom", (room, didJoin) => {
