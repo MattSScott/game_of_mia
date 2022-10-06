@@ -32,7 +32,6 @@ app.use(function (req, res, next) {
 
 var io = require("socket.io")(server);
 
-var connectedClients = [];
 var rooms = {};
 var capacity = 4; // hard code for now but maybe change, idk
 
@@ -74,7 +73,6 @@ class roomStruct {
 
 io.on("connection", (client) => {
   console.log(`New client connected`);
-  connectedClients.push(client);
 
   client.on("init", (name) => {
     if (name) {
