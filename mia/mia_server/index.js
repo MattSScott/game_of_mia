@@ -71,6 +71,16 @@ class roomStruct {
   }
 }
 
+function checkPlayerState(name) {
+  for (const [roomName, roomStruct] of Object.entries(rooms)) {
+    let mems = roomStruct.roomMembers;
+    if (name in mems) {
+      return true;
+    }
+  }
+  return false;
+}
+
 io.on("connection", (client) => {
   console.log(`New client connected`);
 
@@ -106,11 +116,8 @@ io.on("connection", (client) => {
       }
       rooms[room.roomName].addMember({ client: client, name: room.userName });
 
-      if (rooms[room.roomName].numMembers == 1) {
-        client.emit("roomJoined", { host: true });
-      } else {
-        client.emit("roomJoined", { host: false });
-      }
+      let isHost = rooms[room.roomName].numMembers == 1;
+      client.emit("roomJoined", { host: isHost, room: room.roomName });
 
       console.log(rooms[room.roomName]);
       var roomies = rooms[room.roomName].roomMembers;
@@ -133,6 +140,7 @@ io.on("connection", (client) => {
     console.log(`${msg.name} rolled ${msg.score}`);
 
     let room = rooms[msg.room];
+    io.to(msg.room).emit("newScore", msg.score);
 
     let currPlayer = room.activePlayer;
     currPlayer.emit("endTurn");

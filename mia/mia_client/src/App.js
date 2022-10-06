@@ -12,11 +12,17 @@ const loginStates = {
   PLAYING: "playing",
 };
 
+const gameStates = {
+  START_TURN: "start_turn",
+  ROLL_WAS_LOWER: "low_roll",
+  ROLL_WAS_HIGHER: "high_roll",
+  END_TURN: "end_turn",
+};
+
 function App() {
   const [userState, setUserState] = useState({
     currentUsername: null,
     currentUserID: 1,
-    initialLoad: true,
   });
 
   useEffect(() => {
@@ -35,9 +41,6 @@ function App() {
           currentUsername: userData.username,
           currentUserID: userData.userID,
         }));
-
-        //Notify Socket server is not ready to chat
-        socket.emit("UserEnteredRoom", userData);
       });
       //Send Socket command to create user info for current user
       // socket.emit("CreateUserData");
@@ -48,19 +51,9 @@ function App() {
         currentUsername: usernameVal,
         currentUserID: userIDVal,
       }));
-      socket.emit("UserEnteredRoom", {
-        userID: userIDVal,
-        username: usernameVal,
-      });
     }
-    socket.emit("init", usernameVal);
+    socket.emit("init", userState.currentUsername);
   }, []);
-
-  // useEffect(() => {
-  //   if (userState.currentUsername) {
-  //     console.log(userState);
-  //   }
-  // }, [userState.currentUsername]);
 
   const [state, setState] = useState({
     lives: 6,
@@ -77,15 +70,6 @@ function App() {
     playingWith: [],
   });
 
-  // useEffect(() => {
-  //   socket.emit(
-  //     "roller",
-  //     `${userState.currentUsername} rolled ${state.lastRoll}`
-  //   );
-  // }, [state.lastRoll]);
-
-  // constructor = define object above and dynamically make array: [0] player:true [1->n-1] player:false
-
   socket.on("startTurn", () => {
     setState({ ...state, isPlaying: true });
   });
@@ -95,7 +79,12 @@ function App() {
   });
 
   socket.on("roomJoined", (msg) => {
-    setLogin({ ...login, state: loginStates.WAITING, isHost: msg.host });
+    setLogin((l) => ({
+      ...l,
+      state: loginStates.WAITING,
+      isHost: msg.host,
+      loginCode: login.loginCode ? login.loginCode : msg.room,
+    }));
   });
 
   socket.on("gameStarted", () => {
@@ -106,11 +95,11 @@ function App() {
     setLogin({ ...login, playingWith: mates });
   });
 
-  socket.on("roomFull", () => {
-    alert("Room is Full!");
+  socket.on("newScore", (score) => {
+    setState({ ...state, lastRoll: score });
   });
 
-  function joinRoom(e) {
+  const joinRoom = (e) => {
     e.preventDefault();
     let formData = e.target[0].value;
     // socket.emit('createRoom', formData)
@@ -122,17 +111,17 @@ function App() {
       },
       (resp) => {
         if (resp) {
-          setLogin({
-            ...login,
+          setLogin((l) => ({
+            ...l,
             state: loginStates.JOINING,
             loginCode: formData,
-          });
+          }));
         } else {
           alert("Room is Full!");
         }
       }
     );
-  }
+  };
 
   if (login.state === loginStates.LOGIN) {
     return (
