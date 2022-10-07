@@ -2,8 +2,16 @@ import "./roller.css";
 import React, { useState } from "react";
 import { beats } from "../../utils.js";
 
+const gameStates = {
+  START_TURN: "start_turn", // -> roll
+  ROLL_WAS_LOWER: "low_roll", // -> reroll or lie -> end turn
+  ROLL_WAS_HIGHER: "high_roll", // -> submit or lie -> end turn
+  END_TURN: "end_turn", // -> start turn
+};
+
 function Roller({ state, setRoll, socket, name, room }) {
   const [validState, setValid] = useState("Lie About Roll?");
+  const [gameState, setGameState] = useState(gameStates.START_TURN);
 
   const roll = () => {
     var r1 = Math.floor(Math.random() * 6) + 1;
@@ -15,17 +23,31 @@ function Roller({ state, setRoll, socket, name, room }) {
     setRoll({ ...state, isShaking: true });
 
     setTimeout(() => {
+      let score = larger * 10 + smaller;
       setRoll({
         ...state,
-        lastRoll: larger * 10 + smaller,
+        localRoll: score,
         isShaking: false,
       });
-      socket.emit("roller", {
-        name: name,
-        score: larger * 10 + smaller,
-        room: room,
-      });
+      let newTurnState = beats(score, state.currScore)
+        ? gameStates.ROLL_WAS_HIGHER
+        : gameStates.ROLL_WAS_LOWER;
+
+      setGameState(newTurnState);
     }, 1000);
+  };
+
+  const submitRoll = () => {
+    socket.emit("roller", {
+      name: name,
+      score: state.localRoll,
+      room: room,
+    });
+    setGameState(gameStates.START_TURN);
+    setRoll({
+      ...state,
+      localRoll: null,
+    });
   };
 
   const call = () => {
@@ -63,11 +85,16 @@ function Roller({ state, setRoll, socket, name, room }) {
       d1 < 1
     ) {
       setValid("Invalid Input");
-    } else if (!beats(numEntry, state.lastRoll)) {
+    } else if (!beats(numEntry, state.currScore)) {
       setValid("Lie is too low!");
     } else {
       setValid("Lied!");
       socket.emit("liar", { name: name, room: room, value: numEntry });
+      setGameState(gameStates.START_TURN);
+      setRoll({
+        ...state,
+        localRoll: null,
+      });
     }
     setTimeout(() => setValid("Lie About Roll?"), 1500);
   }
@@ -77,12 +104,20 @@ function Roller({ state, setRoll, socket, name, room }) {
       {state.isPlaying ? (
         <>
           <div className="rollerDiv">
-            <button onClick={() => roll()}>Roll</button>
-            <form onSubmit={(event) => validInput(event, setValid)}>
-              <input className="rollerForm" type="text" maxLength="2" />
-            </form>
-            <button onClick={() => call()}>Call</button>
-            {/* <button onClick={() => decLives()}>Dec Lives</button> */}
+            {gameState === gameStates.START_TURN && (
+              <button onClick={() => roll()}>Roll</button>
+            )}
+            {gameState === gameStates.ROLL_WAS_HIGHER && (
+              <button onClick={() => submitRoll()}>Submit Roll</button>
+            )}
+            {gameState !== gameStates.START_TURN && (
+              <form onSubmit={(event) => validInput(event, setValid)}>
+                <input className="rollerForm" type="text" maxLength="2" />
+              </form>
+            )}
+            {gameState === gameStates.START_TURN && state.currScore > 0 && (
+              <button onClick={() => call()}>Call</button>
+            )}
           </div>
 
           <p>{validState}</p>
