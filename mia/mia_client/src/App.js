@@ -12,13 +12,6 @@ const loginStates = {
   PLAYING: "playing",
 };
 
-const gameStates = {
-  START_TURN: "start_turn",
-  ROLL_WAS_LOWER: "low_roll",
-  ROLL_WAS_HIGHER: "high_roll",
-  END_TURN: "end_turn",
-};
-
 function App() {
   const [userState, setUserState] = useState({
     currentUsername: null,
@@ -60,13 +53,14 @@ function App() {
   const [state, setState] = useState({
     lives: 6,
     lastLife: false,
-    lastRoll: 0,
+    currScore: 0,
+    localRoll: 0,
     isShaking: false,
     isPlaying: false,
   });
 
   const [login, setLogin] = useState({
-    state: loginStates.LOGIN,
+    state: loginStates.LOGIN, // use 'PLAYING' for UI debug
     loginCode: null,
     isHost: false,
     playingWith: [],
@@ -98,7 +92,7 @@ function App() {
   });
 
   socket.on("newScore", (score) => {
-    setState({ ...state, lastRoll: score });
+    setState({ ...state, currScore: score });
   });
 
   const joinRoom = (e) => {
@@ -188,7 +182,12 @@ function App() {
         className={state.lastLife ? "App-header-last-life" : "App-header"}
       >
         <h1>The Game of Mia</h1>
-        <Scoreboard score={state.lives} lastRoll={state.lastRoll} />
+        <Scoreboard
+          score={state.lives}
+          currScore={state.currScore}
+          active={state.isPlaying}
+          localRoll={state.localRoll}
+        />
         <img
           src={dice_cup}
           className={state.isShaking ? "App-logo-shake" : "App-logo"}
@@ -201,9 +200,9 @@ function App() {
           name={userState.currentUsername}
           room={login.loginCode}
         />
-        <h2>Active: {state.isPlaying ? "Yes" : "No"}</h2>
+        {/* <h2>Active: {state.isPlaying ? "Yes" : "No"}</h2> */}
         <h2>Playing as: {userState.currentUsername}</h2>
-        <h2>In Room: {login.loginCode}</h2>
+        {/* <h2>In Room: {login.loginCode}</h2> */}
       </header>
     </div>
   );

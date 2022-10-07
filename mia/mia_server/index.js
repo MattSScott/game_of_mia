@@ -40,6 +40,8 @@ class roomStruct {
     this.full = false;
     this.members = [];
     this.activePlayerIndex = 0;
+    this.prevPlayerIndex = -1;
+    this.wasTruthful = true;
   }
 
   addMember(client) {
@@ -56,10 +58,22 @@ class roomStruct {
 
   nextTurn() {
     this.activePlayerIndex = (this.activePlayerIndex + 1) % this.members.length;
+    this.prevPlayerIndex = (this.prevPlayerIndex + 1) % this.members.length;
+  }
+
+  prevTurn() {
+    this.activePlayerIndex =
+      (this.activePlayerIndex + this.members.length - 1) % this.members.length;
+    this.prevPlayerIndex =
+      (this.prevPlayerIndex + this.members.length - 1) % this.members.length;
   }
 
   get activePlayer() {
     return this.members[this.activePlayerIndex].client;
+  }
+
+  get prevPlayer() {
+    return this.members[this.prevPlayerIndex].client;
   }
 
   get numMembers() {
@@ -68,6 +82,10 @@ class roomStruct {
 
   get roomMembers() {
     return Array.from(this.members, (x) => x.name);
+  }
+
+  setTruthful(value) {
+    this.wasTruthful = value;
   }
 }
 
@@ -79,6 +97,15 @@ function checkPlayerState(name) {
     }
   }
   return false;
+}
+
+function advanceTurn(room) {
+  let currPlayer = room.activePlayer;
+  currPlayer.emit("endTurn");
+  room.nextTurn();
+
+  let nextPlayer = room.activePlayer;
+  nextPlayer.emit("startTurn");
 }
 
 io.on("connection", (client) => {
@@ -141,19 +168,28 @@ io.on("connection", (client) => {
 
     let room = rooms[msg.room];
     io.to(msg.room).emit("newScore", msg.score);
-
-    let currPlayer = room.activePlayer;
-    currPlayer.emit("endTurn");
-    room.nextTurn();
-
-    let nextPlayer = room.activePlayer;
-    nextPlayer.emit("startTurn");
+    room.setTruthful(true);
+    advanceTurn(room);
   });
 
-  //   client.on("UserEnteredRoom", (data) => {
-  //     connectedClients.ap
-  //     // connectedClients[client.id] = data;
-  //     // console.log(connectedClients);
-  //     // console.log(Object.keys(connectedClients));
-  //   });
+  client.on("liar", (msg) => {
+    let room = rooms[msg.room];
+    io.to(msg.room).emit("newScore", msg.value);
+    room.setTruthful(false);
+    advanceTurn(room);
+  });
+
+  client.on("caller", (msg) => {
+    console.log(`${msg.name} called!`);
+    let room = rooms[msg.room];
+    if (room.wasTruthful) {
+      room.activePlayer.emit("lifeLost");
+    } else {
+      room.prevPlayer.emit("lifeLost");
+      room.activePlayer.emit("endTurn");
+      room.prevPlayer.emit("startTurn");
+      room.prevTurn();
+    }
+    io.to(msg.room).emit("newScore", 0); // restart round
+  });
 });
