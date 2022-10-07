@@ -1,8 +1,9 @@
 import "./roller.css";
 import React, { useState } from "react";
+import { beats } from "../../utils.js";
 
 function Roller({ state, setRoll, socket, name, room }) {
-  const [validState, setValid] = useState("Lie About Roll");
+  const [validState, setValid] = useState("Lie About Roll?");
 
   const roll = () => {
     var r1 = Math.floor(Math.random() * 6) + 1;
@@ -50,10 +51,11 @@ function Roller({ state, setRoll, socket, name, room }) {
   function validInput(event) {
     event.preventDefault();
     var entry = event.target[0].value;
+    var numEntry = parseInt(entry);
     var d1 = entry[0];
     var d2 = entry[1];
     if (
-      !Number.isInteger(parseInt(entry)) ||
+      !Number.isInteger(numEntry) ||
       d2 > d1 ||
       d2 > 6 ||
       d1 > 6 ||
@@ -61,12 +63,13 @@ function Roller({ state, setRoll, socket, name, room }) {
       d1 < 1
     ) {
       setValid("Invalid Input");
+    } else if (!beats(numEntry, state.lastRoll)) {
+      setValid("Lie is too low!");
     } else {
-      setValid("Valid");
-      socket.emit("liar", { name: name, room: room, value: entry });
-      // setRoll({ ...state, lastRoll: entry });
+      setValid("Lied!");
+      socket.emit("liar", { name: name, room: room, value: numEntry });
     }
-    setTimeout(() => setValid("Lie About Roll"), 750);
+    setTimeout(() => setValid("Lie About Roll?"), 1500);
   }
 
   return (
