@@ -66,7 +66,7 @@ function App() {
   });
 
   const [login, setLogin] = useState({
-    state: loginStates.LOGIN,
+    state: loginStates.LOGIN, // use 'PLAYING' for UI debug
     loginCode: null,
     isHost: false,
     playingWith: [],

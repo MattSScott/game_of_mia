@@ -4,7 +4,7 @@ import React, { useState } from "react";
 function Roller({ state, setRoll, socket, name, room }) {
   const [validState, setValid] = useState("Lie About Roll");
 
-  function roll() {
+  const roll = () => {
     var r1 = Math.floor(Math.random() * 6) + 1;
     var r2 = Math.floor(Math.random() * 6) + 1;
 
@@ -25,7 +25,11 @@ function Roller({ state, setRoll, socket, name, room }) {
         room: room,
       });
     }, 1000);
-  }
+  };
+
+  const call = () => {
+    socket.emit("caller", { name: name, room: room });
+  };
 
   const decLives = () => {
     if (state.lives === "OUT") return;
@@ -38,6 +42,10 @@ function Roller({ state, setRoll, socket, name, room }) {
       setRoll({ ...state, lives: newLives });
     }
   };
+
+  socket.on("lifeLost", () => {
+    decLives();
+  });
 
   function validInput(event) {
     event.preventDefault();
@@ -52,24 +60,33 @@ function Roller({ state, setRoll, socket, name, room }) {
       d2 < 1 ||
       d1 < 1
     ) {
-      setValid("Invalid Format");
+      setValid("Invalid Input");
     } else {
       setValid("Valid");
-      setRoll({ ...state, lastRoll: entry });
-      setTimeout(() => setValid("Lie About Roll"), 500);
+      socket.emit("liar", { name: name, room: room, value: entry });
+      // setRoll({ ...state, lastRoll: entry });
     }
+    setTimeout(() => setValid("Lie About Roll"), 750);
   }
 
   return (
     <div className="main">
-      <div className="rollerDiv">
-        <button onClick={() => state.isPlaying && roll()}>Roll</button>
-        <form onSubmit={(event) => validInput(event, setValid)}>
-          <input className="rollerForm" type="text" maxLength="2" />
-        </form>
-        <button onClick={() => decLives()}>Dec Lives</button>
-      </div>
-      <p>{validState}</p>
+      {state.isPlaying ? (
+        <>
+          <div className="rollerDiv">
+            <button onClick={() => roll()}>Roll</button>
+            <form onSubmit={(event) => validInput(event, setValid)}>
+              <input className="rollerForm" type="text" maxLength="2" />
+            </form>
+            <button onClick={() => call()}>Call</button>
+            {/* <button onClick={() => decLives()}>Dec Lives</button> */}
+          </div>
+
+          <p>{validState}</p>
+        </>
+      ) : (
+        <h2>Waiting for Turn...</h2>
+      )}
     </div>
   );
 }
