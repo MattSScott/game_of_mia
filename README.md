@@ -4,14 +4,18 @@ This is a distributed systems approach to the 'Game of Mia', a drinking game I l
 
 ## To Launch:
 
-1. Deploy the server by navigating to `mia_server` and running `node index.js`
-2. Launch the client by navigating to `mia_client` and running `npm start`
+1. Deploy the server by navigating to `mia_server`
+   1. Run `npm install` to grab the dependencies. 
+   2. Run `node index.js`
+2. Launch the client by navigating to `mia_client` 
+   1. Run `npm install` to grab the dependencies. 
+   2. Run `npm start`
 
 ## To Play:
 
 1. Create a room by entering text into the form and pressing `create room`
 2. Have others join the room by entering the same string (case sensitive) and pressing `join room`. The room capacity is limited to 4, but this may be made dynamic in the future.
-3. Whoever created the room will be the host, and simply has to press start to place all room members in a game.
+3. Whoever created the room will be the host, and simply has to press `start` to place all room members in a game.
 
 ## The Rules:
 
